@@ -35,6 +35,7 @@ type Callback = (err: Error | null, apiResponse?: {}) => void;
 export type MonitoredResource = protos.google.api.MonitoredResource;
 
 export interface StackdriverData {
+  '@type'?: 'type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent';
   serviceContext?: ServiceContext;
   message?: string;
   metadata?: Metadata | MetadataArg;
@@ -207,9 +208,16 @@ export class LoggingCommon {
     // We prefer to format messages as jsonPayload (by putting it as a message
     // property on an object) as that works and is accepted by Error Reporting
     // in far more resource types.
-    //
     if (metadata.stack) {
       message += (message ? ' ' : '') + metadata.stack;
+      data.serviceContext = this.serviceContext;
+    }
+    // If the log has a level of error or higher,
+    // we manually set its type to error so that Error Reporting
+    // picks it up even if the stack trace is not included.
+    if (levelCode <= NPM_LEVEL_NAME_TO_CODE.error) {
+      data['@type'] =
+        'type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent';
       data.serviceContext = this.serviceContext;
     }
 
